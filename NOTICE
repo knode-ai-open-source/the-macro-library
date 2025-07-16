@@ -1,0 +1,7 @@
+The Macro Library
+© 2019-2025 Andy Curtis <contactandyc@gmail.com>
+© 2024-2025 Knode.ai — technical questions: contact Andy (above)
+
+Based on the Dutch national flag problem (https://en.wikipedia.org/wiki/Dutch_national_flag_problem)
+Consulted: Bentley & McIlroy, “Engineering a sort function,” Software – Practice and Experience 23(11): 1249–1265 (1993)
+Licensed under Apache-2.0 (see LICENSE)
