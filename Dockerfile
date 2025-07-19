@@ -14,7 +14,7 @@ WORKDIR /workspace
 RUN git clone \
       https://${GITHUB_TOKEN}@github.com/knode-ai-open-source/a-cmake-library.git \
       /workspace/a-cmake-library && \
-      cd /workspace/a-cmake-library && ./build_install.sh \
+      cd /workspace/a-cmake-library && ./build_install.sh && \
       rm -rf /workspace/a-cmake-library
 
 # 2) Build library
