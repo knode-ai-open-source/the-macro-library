@@ -10,7 +10,7 @@ ARG GITHUB_TOKEN
 USER dev
 WORKDIR /workspace
 
-# 1) Clone CMake library
+# 1) a-cmake-library
 RUN git clone \
       https://${GITHUB_TOKEN}@github.com/knode-ai-open-source/a-cmake-library.git \
       /workspace/a-cmake-library && \
