@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
 static inline int macro_highest_bit_index(uint32_t x) {
@@ -318,20 +320,20 @@ static inline uint64_t macro_to_uint64(const char *str, uint64_t default_value) 
 
 static inline float macro_to_float(const char *str, float default_value) {
     if (!str) return default_value;
-
-    float r;
-    if(sscanf(str, "%f", &r) == 1)
-        return r;
-    return default_value;
+    errno = 0;
+    char *end = NULL;
+    float v = strtof(str, &end);
+    if (errno != 0 || end == str || *end != '\0') return default_value;  // rejected
+    return v;
 }
 
 static inline double macro_to_double(const char *str, double default_value) {
     if (!str) return default_value;
-
-    double r;
-    if(sscanf(str, "%lf", &r) == 1)
-        return r;
-    return default_value;
+    errno = 0;
+    char *end = NULL;
+    double v = strtod(str, &end);
+    if (errno != 0 || end == str || *end != '\0') return default_value;  // rejected
+    return v;
 }
 
 static inline bool macro_to_bool(const char *str, bool default_value) {

@@ -44,54 +44,53 @@ Also consulted
                                    left_eq, left_p, right_p, right_eq,    \
                                    left_n, right_n, tmp_n)                \
     macro_swap(lo, mid);                                                  \
-    left_eq = left_p = lo+1;                                              \
-    right_p = right_eq = hi;                                              \
-label_prefix ## _cmp_first:;                                              \
-    if(left_p <= right_p) {                                               \
-        if(macro_less(style, type, cmp, left_p, lo)) {                    \
-            left_p++;                                                     \
-            goto label_prefix ## _cmp_first;                              \
-        }                                                                 \
-        if(macro_less(style, type, cmp, lo, left_p))                      \
-            goto label_prefix ## _cmp_second2;                            \
-        macro_swap(left_eq, left_p);                                      \
-        left_eq++;                                                        \
-        left_p++;                                                         \
-        goto label_prefix ## _cmp_first;                                  \
-    }                                                                     \
-    else                                                                  \
-        goto label_prefix ## _after_swapping;                             \
-label_prefix ## _cmp_second:;                                             \
-    if(left_p > right_p)                                                  \
-        goto label_prefix ## _after_swapping;                             \
-label_prefix ## _cmp_second2:;                                            \
-    if(macro_less(style, type, cmp, lo, right_p)) {                       \
-        right_p--;                                                        \
-        goto label_prefix ## _cmp_second;                                 \
-    }                                                                     \
-    if(macro_less(style, type, cmp, right_p, lo))                         \
-        goto label_prefix ## _swap_and_loop;                              \
-    macro_swap(right_p, right_eq);                                        \
-    right_eq--;                                                           \
-    right_p--;                                                            \
-    goto label_prefix ## _cmp_second;                                     \
-label_prefix ## _swap_and_loop:;                                          \
-    macro_swap(left_p, right_p);                                          \
-    left_p++;                                                             \
-    right_p--;                                                            \
-    goto label_prefix ## _cmp_first;                                      \
-label_prefix ## _after_swapping:;                                         \
-	left_n = left_p-left_eq;                                                 \
-	right_n = right_eq-right_p;                                              \
-    tmp_n = left_eq-lo;                                                   \
-    if(tmp_n > left_n)                                                    \
-        tmp_n = left_n;                                                   \
-    macro_vecswap(lo, left_p-tmp_n, left_eq, right_p, tmp_n);             \
-    tmp_n = hi-right_eq;                                                  \
-    if(tmp_n > right_n)                                                   \
-        tmp_n = right_n;                                                  \
-    macro_vecswap(left_p, hi+1-tmp_n, left_eq, right_p, tmp_n);           \
-    left_p = lo;                                                          \
-    right_p = hi+1-right_n;
+    left_eq = left_p = lo + 1;                                             \
+    right_p = right_eq = hi;                                               \
+label_prefix ## _cmp_first:;                                               \
+    if (left_p <= right_p) {                                               \
+        if (macro_less(style, type, cmp, left_p, lo)) {                    \
+            left_p++;                                                      \
+            goto label_prefix ## _cmp_first;                               \
+        }                                                                  \
+        if (macro_less(style, type, cmp, lo, left_p))                      \
+            goto label_prefix ## _cmp_second2;                             \
+        macro_swap(left_eq, left_p);                                       \
+        left_eq++;                                                         \
+        left_p++;                                                          \
+        goto label_prefix ## _cmp_first;                                   \
+    } else                                                                 \
+        goto label_prefix ## _after_swapping;                              \
+label_prefix ## _cmp_second:;                                              \
+    if (left_p > right_p)                                                  \
+        goto label_prefix ## _after_swapping;                              \
+label_prefix ## _cmp_second2:;                                             \
+    if (macro_less(style, type, cmp, lo, right_p)) {                       \
+        right_p--;                                                         \
+        goto label_prefix ## _cmp_second;                                  \
+    }                                                                      \
+    if (macro_less(style, type, cmp, right_p, lo))                         \
+        goto label_prefix ## _swap_and_loop;                               \
+    macro_swap(right_p, right_eq);                                         \
+    right_eq--;                                                            \
+    right_p--;                                                             \
+    goto label_prefix ## _cmp_second;                                      \
+label_prefix ## _swap_and_loop:;                                           \
+    macro_swap(left_p, right_p);                                           \
+    left_p++;                                                              \
+    right_p--;                                                             \
+    goto label_prefix ## _cmp_first;                                       \
+label_prefix ## _after_swapping:;                                          \
+    left_n  = (size_t)(left_p  - left_eq);                                  \
+    right_n = (size_t)(right_eq - right_p);                                 \
+    tmp_n   = (size_t)(left_eq - lo);                                       \
+    if (tmp_n > left_n)                                                     \
+        tmp_n = left_n;                                                     \
+    macro_vecswap(lo, left_p - tmp_n, left_eq, right_p, tmp_n);             \
+    tmp_n = (size_t)(hi - right_eq);                                        \
+    if (tmp_n > right_n)                                                    \
+        tmp_n = right_n;                                                    \
+    macro_vecswap(left_p, hi + 1 - tmp_n, left_eq, right_p, tmp_n);         \
+    left_p = lo;                                                            \
+    right_p = hi + 1 - right_n;
 
 #endif /* _macro_dutch_flag_partition_H */

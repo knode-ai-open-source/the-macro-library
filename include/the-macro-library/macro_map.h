@@ -3,19 +3,54 @@
 #ifndef _macro_map_H
 #define _macro_map_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 
+// Important: These APIs assume macro_map_t is the first member of your value type. If it is not, use the
+// _with_field variants.
+
 #include "the-macro-library/macro_cmp.h"
 
-typedef struct macro_map_s {
-    size_t parent_color;
-    struct macro_map_s *left;
-    struct macro_map_s *right;
-} macro_map_t __attribute__((aligned(2)));
+#ifndef UINTPTR_MAX
+/* Fallback: assume size_t can carry a pointer (common but not guaranteed) */
+typedef size_t uintptr_t;
+#endif
+
+_Static_assert(sizeof(uintptr_t) >= sizeof(void*), "uintptr_t too small");
+
+#if defined(__GNUC__) || defined(__clang__)
+  /* Attribute goes AFTER the typedef name */
+  typedef struct macro_map_s {
+      uintptr_t parent_color;   /* was size_t */
+      struct macro_map_s *left;
+      struct macro_map_s *right;
+  } macro_map_t __attribute__((aligned(2)));
+#elif defined(_MSC_VER)
+  /* declspec goes BEFORE the type name */
+  __declspec(align(2))
+  typedef struct macro_map_s {
+      uintptr_t parent_color;
+      struct macro_map_s *left;
+      struct macro_map_s *right;
+  } macro_map_t;
+#else
+  /* No attribute: rely on the static assert below to catch problems */
+  typedef struct macro_map_s {
+      uintptr_t parent_color;
+      struct macro_map_s *left;
+      struct macro_map_s *right;
+  } macro_map_t;
+#endif
+
 /* The alignment is needed because the color uses the lowest bit */
+
+#if __STDC_VERSION__ >= 201112L
+_Static_assert(_Alignof(macro_map_t) % 2 == 0,
+               "macro_map_t must be >=2 aligned for LSB color tagging");
+#endif
 
 /* iteration */
 static inline macro_map_t *macro_map_first(macro_map_t *n);
@@ -38,17 +73,17 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node);
 
 static void _macro_map_fix_insert(macro_map_t *node, macro_map_t *parent, macro_map_t **root);
 
-#define macro_map_color(n) ((n)->parent_color & 1)
-#define _macro_map_is_red(n) (((n)->parent_color & 1) == 0)
-#define _macro_map_is_black(n) (((n)->parent_color & 1) == 1)
-#define _macro_map_parent(n) (macro_map_t *)((n)->parent_color - ((n)->parent_color & 1))
+#define macro_map_color(n)            ((n)->parent_color & (uintptr_t)1)
+#define _macro_map_is_red(n)          ((((n)->parent_color & (uintptr_t)1) == 0))
+#define _macro_map_is_black(n)        ((((n)->parent_color & (uintptr_t)1) == 1))
 
-#define _macro_map_set_black(n) (n)->parent_color |= 1
-#define _macro_map_set_red(n) (n)->parent_color -= ((n)->parent_color & 1)
-#define _macro_map_set_parent(n, parent)    \
-    (n)->parent_color = ((n)->parent_color & 1) + (size_t)(parent)
+#define _macro_map_clear_black(n)     ((n)->parent_color = (uintptr_t)1)
 
-#define _macro_map_clear_black(n) (n)->parent_color = 1
+#define _macro_map_set_black(n)  ((n)->parent_color |=  (uintptr_t)1)
+#define _macro_map_set_red(n)    ((n)->parent_color &= ~(uintptr_t)1)
+#define _macro_map_parent(n)     ((macro_map_t *)((n)->parent_color & ~(uintptr_t)1))
+#define _macro_map_set_parent(n, parent) \
+    ((n)->parent_color = ((n)->parent_color & (uintptr_t)1) | (uintptr_t)(parent))
 
 /* iteration */
 static inline macro_map_t *macro_map_first(macro_map_t *n) {
@@ -126,6 +161,7 @@ static inline macro_map_t *macro_map_postorder_next(macro_map_t *n) {
 static void _macro_map_tree_copy(macro_map_t *n, macro_map_t **res, macro_map_t *parent,
                                         macro_map_copy_node_cb copy, void *arg) {
     macro_map_t *c = copy(n, arg);
+    *res = c;
     c->parent_color = n->parent_color;
     _macro_map_set_parent(c, parent);
     if (n->left)
@@ -144,53 +180,50 @@ static inline macro_map_t *macro_map_copy(macro_map_t *root, macro_map_copy_node
         _macro_map_tree_copy(root, &res, NULL, copy, arg);
     return res;
 }
-
 static inline void _macro_map_rotate_left(macro_map_t *A, macro_map_t **root) {
     macro_map_t *new_root = A->right;
 
-    size_t tmp_pc = A->parent_color;
+    uintptr_t tmp_pc = A->parent_color;                 // was size_t
     A->parent_color = new_root->parent_color;
     new_root->parent_color = tmp_pc;
+
     macro_map_t *parent = _macro_map_parent(new_root);
     if (parent) {
-        if (parent->left == A)
-            parent->left = new_root;
-        else
-            parent->right = new_root;
-    } else
-        *root = new_root;
+        if (parent->left == A) parent->left = new_root; else parent->right = new_root;
+    } else if (root) {
+        *root = new_root;                               // guarded write
+    }
 
     macro_map_t *tmp = new_root->left;
     new_root->left = A;
     _macro_map_set_parent(A, new_root);
 
     A->right = tmp;
-    if (tmp)
-        _macro_map_set_parent(tmp, A);
+    if (tmp) _macro_map_set_parent(tmp, A);
 }
 
-static void _macro_map_rotate_right(macro_map_t *A, macro_map_t **root) {
+static inline void _macro_map_rotate_right(macro_map_t *A, macro_map_t **root) {
     macro_map_t *new_root = A->left;
-    size_t tmp_pc = A->parent_color;
+
+    uintptr_t tmp_pc = A->parent_color;
     A->parent_color = new_root->parent_color;
     new_root->parent_color = tmp_pc;
+
     macro_map_t *parent = _macro_map_parent(new_root);
     if (parent) {
-        if (parent->left == A)
-            parent->left = new_root;
-        else
-            parent->right = new_root;
-    } else
+        if (parent->left == A) parent->left = new_root; else parent->right = new_root;
+    } else if (root) {
         *root = new_root;
+    }
 
     macro_map_t *tmp = new_root->right;
     new_root->right = A;
     _macro_map_set_parent(A, new_root);
 
     A->left = tmp;
-    if (tmp)
-        _macro_map_set_parent(tmp, A);
+    if (tmp) _macro_map_set_parent(tmp, A);
 }
+
 
 static void _macro_map_fix_insert(macro_map_t *node, macro_map_t *parent, macro_map_t **root) {
     _macro_map_set_red(node);
@@ -361,8 +394,9 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
   Given an address of a member of a structure, the base object type, and the
   field name, return the address of the base structure.
 */
-#define macro_parent_object(addr, base_type, field)    \
-  (base_type *)((char *)addr - offsetof(base_type, field))
+#define macro_parent_object(addr, base_type, field) \
+  ((base_type *)((char *)(addr) - offsetof(base_type, field)))
+
 
 
 #define _macro_map_find_code_head(value_type)
@@ -525,7 +559,7 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
     }
 
 #define _macro_map_with_field(name, field, find_style, style, type, cmp)               \
-    _macro_map_h(name, style, type) { {                                                \
+    _macro_map_h(name, style, type) {                                                  \
         _macro_map_code_with_field(root, field, find_style, style, type, cmp, key);    \
     }
 
@@ -558,12 +592,12 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
 
 #define _macro_map_kv_compare(name, find_style, style, key_type, value_type)             \
     _macro_map_kv_compare_h(name, style, key_type, value_type) {                         \
-        _macro_map_kv_code(root, find_style, style, key_type, value_type, cmp, node);    \
+        _macro_map_kv_code(root, find_style, style, key_type, value_type, cmp, key);    \
     }
 
 #define _macro_map_kv_compare_with_field(name, field, find_style, style, key_type, value_type)             \
     _macro_map_kv_compare_h(name, style, key_type, value_type) {                                           \
-        _macro_map_kv_code_with_field(root, field, find_style, style, key_type, value_type, cmp, node);    \
+        _macro_map_kv_code_with_field(root, field, find_style, style, key_type, value_type, cmp, key);    \
     }
 
 #define _macro_map_insert_code_with_field(root, field, style, value_type, cmp, node )    \
@@ -721,7 +755,7 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
 #define macro_map_insert_compare_with_field(name, field, type)    \
     _macro_map_insert_compare_with_field(name, field, macro_map_default(), type)
 
-#define macro_map_insert_compare(name, cmp) _macro_map_insert_compare(name, macro_map_default(), cmp)
+#define macro_map_insert_compare(name, type) _macro_map_insert_compare(name, macro_map_default(), type)
 
 /* multimap */
 #define _macro_multimap_insert_h(name, style, type) _macro_map_insert_h(name, style, type)
@@ -738,6 +772,6 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
 #define macro_multimap_insert_compare_with_field(name, field, type)    \
     _macro_multimap_insert_compare_with_field(name, field, macro_map_default(), type)
 
-#define macro_multimap_insert_compare(name, cmp) _macro_multimap_insert_compare(name, macro_map_default(), cmp)
+#define macro_multimap_insert_compare(name, type) _macro_multimap_insert_compare(name, macro_map_default(), type)
 
 #endif

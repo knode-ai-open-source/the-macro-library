@@ -5,7 +5,7 @@ set -euxo pipefail
 rm -rf build
 mkdir -p build
 cd build
-cmake ..
+cmake .. "$@"
 make -j$(nproc)
 sudo make install
 cd ..

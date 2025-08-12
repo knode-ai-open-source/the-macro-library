@@ -9,6 +9,9 @@
 #include <strings.h>
 #include <stdbool.h>
 
+#include <stddef.h>
+#include <limits.h>
+
 
 #include "the-macro-library/src/macro_check_sorted.h"
 #include "the-macro-library/src/macro_dutch_flag_partition.h"
@@ -27,33 +30,18 @@
    For platforms that don't have built-ins or 'flsl/fls', we fall back to a loop-based approach.
 */
 
-#if defined(__linux__) && defined(__LP64__)
-// 64-bit Linux: use __builtin_clzl
-#define __mcro_introsort_max_depth(n) \
-    depth_limit = ((64 - __builtin_clzl((unsigned long)(n))) - 1) << 1
-
-#elif defined(__linux__)
-// 32-bit Linux: use __builtin_clz
-#define __mcro_introsort_max_depth(n) \
-    depth_limit = ((32 - __builtin_clz((unsigned)(n))) - 1) << 1
-
-#elif defined(__FreeBSD__) && defined(__LP64__)
-// 64-bit FreeBSD provides flsl
-#define __mcro_introsort_max_depth(n) depth_limit = (flsl((long)(n)) - 1) << 1
-
-#elif defined(__FreeBSD__)
-// 32-bit FreeBSD provides fls
-#define __mcro_introsort_max_depth(n) depth_limit = (fls((int)(n)) - 1) << 1
-
+/* One portable branch using compiler builtins when available */
+#if defined(__GNUC__) || defined(__clang__)
+  #if ULONG_MAX > 0xFFFFFFFFul
+    #define __mcro_introsort_max_depth(n) \
+      depth_limit = ((int)(64 - __builtin_clzl((unsigned long)(n)) - 1)) << 1
+  #else
+    #define __mcro_introsort_max_depth(n) \
+      depth_limit = ((int)(32 - __builtin_clz((unsigned)(n)) - 1)) << 1
+  #endif
 #else
-// Fallback method: manually count the leading bit
-#define __mcro_introsort_max_depth(n)    \
-    tmp_n = (n);                         \
-    depth_limit = 0;                     \
-    while (tmp_n >>= 1)                  \
-        depth_limit++;                   \
-    depth_limit <<= 1
-
+  #define __mcro_introsort_max_depth(n)  /* loop fallback */ \
+      tmp_n = (n); depth_limit = 0; while (tmp_n >>= 1) depth_limit++; depth_limit <<= 1
 #endif
 
 /*
@@ -62,30 +50,24 @@
 */
 typedef struct {
   void *base;
-  ssize_t n;
+  size_t n;
 } __macro_introsort_stack_t;
 
-#define __macro_push_and_loop(top, arr, num,                   \
-                              left, left_n, right, right_n,    \
-                              loop, pop)                       \
-    if(left_n > 1) {                                           \
-        top->base = left;                                      \
-        top->n = left_n;                                       \
-        top++;                                                 \
-        if(right_n > 1) {                                      \
-            arr = right;                                       \
-            num = right_n;                                     \
-            goto loop;                                         \
-        }                                                      \
-        else goto pop;                                         \
-    }                                                          \
-    else if(right_n > 1) {                                     \
-        arr = right;                                           \
-        num = right_n;                                         \
-        goto loop;                                             \
-    }                                                          \
-    else {                                                     \
-        goto pop;                                              \
+#define __macro_push_and_loop(top, arr, num, left, left_n, right, right_n, loop, pop) \
+    if ((left_n) > 1) {                                                              \
+        if ((left_n) < (right_n)) {                                                  \
+            (top)->base = (right); (top)->n = (right_n); (top)++;                    \
+            (arr) = (left);  (num) = (left_n);  goto loop;                           \
+        } else if((right_n) > 1) {                                                   \
+            (top)->base = (left);  (top)->n = (left_n);  (top)++;                    \
+            (arr) = (right); (num) = (right_n); goto loop;                           \
+        } else {                                                                     \
+            (arr) = (left);  (num) = (left_n);  goto loop;                           \
+        }                                                                            \
+    } else if ((right_n) > 1) {                                                      \
+        (arr) = (right); (num) = (right_n); goto loop;                               \
+    } else {                                                                         \
+        goto pop;                                                                    \
     }
 
 #define __macro_mid3(style, type, cmp, a, b, c)       \
@@ -138,7 +120,7 @@ typedef struct {
 */
 #define __macro_introsort_vars(type)                            \
     type* c; type* d; type* f; type* lo; type* mid; type* hi;   \
-    ssize_t left_n, right_n, tmp_n, delta, elem_size;    \
+    size_t left_n, right_n, tmp_n, delta;                       \
     int depth_limit;                                            \
     __macro_introsort_stack_t stack[64];                        \
     __macro_introsort_stack_t *top = stack;                     \
