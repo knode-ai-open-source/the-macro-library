@@ -382,6 +382,8 @@ static inline bool macro_try_to_bool(const char *str, bool *out) {
     if (str[0] == '0' && str[1] == '\0') { *out = false; return true; }
     if (strcasecmp(str, "true") == 0)  { *out = true; return true; }
     if (strcasecmp(str, "false") == 0) { *out = false; return true; }
+    if (strcasecmp(str, "yes") == 0)  { *out = true; return true; }
+    if (strcasecmp(str, "no") == 0)  { *out = false; return true; }
     return false;
 }
 

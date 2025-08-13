@@ -121,7 +121,7 @@ These return `true` on success and write the parsed value to `*out`. On failure 
 
 * Integer rules match the `macro_to_*` family and perform explicit range checks.
 * Float/double use `strtof/strtod` with full‑string consumption.
-* `macro_try_to_bool` is **strict**: accepts `"true"`/`"false"` (case‑insensitive) and `"1"`/`"0"` only.
+* `macro_try_to_bool` is **strict**: accepts `"true / yes"`/`"false / no"` (case‑insensitive) and `"1"`/`"0"` only.
 
 ### Bit operations
 
