@@ -33,7 +33,6 @@ static time_t make_utc(int y,int m,int d,int H,int M,int S){
 #endif
 }
 
-
 /* ---------------- Bit utilities ---------------- */
 
 MACRO_TEST(bit_ops_zero_returns_minus1) {
@@ -102,7 +101,7 @@ MACRO_TEST(bit_ops_pattern_counts) {
 
     /* 64-bit patterns */
     MACRO_ASSERT_EQ_INT(macro_bit_count64(0xFFFFFFFFFFFFFFFFull), 64);
-    MACRO_ASSERT_EQ_INT(macro_bit_count64(0xAAAAAAAAAAAAAAAAull), 32); /* full 64-bit 0xA pattern */
+    MACRO_ASSERT_EQ_INT(macro_bit_count64(0xAAAAAAAAAAAAAAAAull), 32);
     MACRO_ASSERT_EQ_INT(macro_bit_count64(0x5555555555555555ull), 32);
 
     /* Odd-length (15-nibble) pattern: 15 * 2 ones = 30 */
@@ -119,10 +118,10 @@ MACRO_TEST(string_default_helper) {
 
 MACRO_TEST(string_empty_is_not_default) {
     const char *d = "DEF";
-    MACRO_ASSERT_STREQ(macro_to_string("", d), ""); /* empty string is a real value, not default */
+    MACRO_ASSERT_STREQ(macro_to_string("", d), ""); /* empty string is a real value */
 }
 
-/* ---------------- Integer conversions (no overflow) ---------------- */
+/* ---------------- Integer conversions (overflow=>default) ---------------- */
 
 MACRO_TEST(conv_to_int_variants) {
     MACRO_ASSERT_EQ_INT(macro_to_int("0", 7), 0);
@@ -138,13 +137,31 @@ MACRO_TEST(conv_to_int_variants) {
     MACRO_ASSERT_EQ_INT((int)macro_to_uint32("-1", 3), 3);
     MACRO_ASSERT_EQ_INT((int)macro_to_uint32("12x", 4), 4);
 
+    /* Exact UINT64_MAX is ok */
     uint64_t u = macro_to_uint64("18446744073709551615", 0); /* UINT64_MAX */
     MACRO_ASSERT_TRUE(u == UINT64_MAX);
+    /* negatives and trailing junk => defaults */
     MACRO_ASSERT_TRUE(macro_to_uint64("-1", 5) == 5);
     MACRO_ASSERT_TRUE(macro_to_uint64("18446744073709551615x", 6) == 6);
 }
 
-/* Formatting/strictness edges for ints */
+MACRO_TEST(conv_to_int_overflow_defaults) {
+    /* Signed 32 overflow => default */
+    char above_i32[] = "2147483648";
+    char below_i32[] = "-2147483649";
+    MACRO_ASSERT_EQ_INT(macro_to_int32(above_i32, -7), -7);
+    MACRO_ASSERT_EQ_INT(macro_to_int32(below_i32,  8),  8);
+
+    /* Signed 64 overflow => default */
+    MACRO_ASSERT_TRUE(macro_to_int64("9223372036854775808", -11) == -11);
+    MACRO_ASSERT_TRUE(macro_to_int64("-9223372036854775809",  12) == 12);
+
+    /* Unsigned 32/64 overflow => default */
+    MACRO_ASSERT_TRUE(macro_to_uint32("4294967296", 77) == 77);
+    MACRO_ASSERT_TRUE(macro_to_uint64("18446744073709551616", 99) == 99);
+}
+
+/* Formatting/strictness edges for ints (no whitespace/plus allowed) */
 MACRO_TEST(conv_to_int_formatting_edges) {
     MACRO_ASSERT_EQ_INT(macro_to_int("00123", 0), 123);
     MACRO_ASSERT_EQ_INT(macro_to_int("-0", 9), 0);
@@ -155,7 +172,6 @@ MACRO_TEST(conv_to_int_formatting_edges) {
     MACRO_ASSERT_EQ_INT(macro_to_int("42 ", 7), 7);
 }
 
-/* Extra uint32/uint64 cases without overflow assertions */
 MACRO_TEST(conv_to_uint32_leading_zeros) {
     MACRO_ASSERT_EQ_INT((int)macro_to_uint32("00000000042", 77), 42);
     MACRO_ASSERT_EQ_INT((int)macro_to_uint32("-0", 99), 99);
@@ -166,9 +182,8 @@ MACRO_TEST(conv_to_uint64_zero_and_max) {
     MACRO_ASSERT_TRUE(macro_to_uint64("18446744073709551615", 5) == UINT64_MAX);
 }
 
-/* ---------------- Floating-point conversions ----------------
-   These assume "strict" parsing (no trailing junk).
-*/
+/* ---------------- Floating-point conversions (strict) ---------------- */
+
 MACRO_TEST(conv_to_float_double) {
     double d = macro_to_double("3.14159", -1.0);
     float  f = macro_to_float("2.5", -1.0f);
@@ -187,7 +202,7 @@ MACRO_TEST(conv_to_double_scientific_and_negzero) {
     MACRO_ASSERT_TRUE(fabs(n0) < 1e-12);
 }
 
-/* ---------------- Boolean conversion semantics ----------------
+/* ---------------- Boolean conversion semantics (permissive) ----------------
    macro_to_bool(str, default):
      - If default==true  -> returns false only if first char in {f,0,n,F,N}; else true
      - If default==false -> returns true  only if first char in {t,1,y,T,Y}; else false
@@ -217,6 +232,67 @@ MACRO_TEST(conv_to_bool_case_insensitive_more) {
     /* empty string: first char '\0' -> not t/1/y and not f/0/n */
     MACRO_ASSERT_TRUE(macro_to_bool("", false) == false);
     MACRO_ASSERT_TRUE(macro_to_bool("", true)  == true);
+}
+
+/* ---------------- Try-conversions (new strict APIs) ---------------- */
+
+MACRO_TEST(try_to_int_success_and_failure) {
+    int v;
+    MACRO_ASSERT_TRUE(macro_try_to_int("0", &v) && v == 0);
+    MACRO_ASSERT_TRUE(macro_try_to_int("-123", &v) && v == -123);
+    MACRO_ASSERT_TRUE(!macro_try_to_int("+1", &v));   /* plus not allowed */
+    MACRO_ASSERT_TRUE(!macro_try_to_int(" 1", &v));   /* no whitespace */
+    MACRO_ASSERT_TRUE(!macro_try_to_int("1 ", &v));
+    MACRO_ASSERT_TRUE(!macro_try_to_int(NULL, &v));
+
+    /* Overflow -> false */
+    MACRO_ASSERT_TRUE(!macro_try_to_int32("2147483648", (int32_t*)&v));
+    MACRO_ASSERT_TRUE(!macro_try_to_int32("-2147483649", (int32_t*)&v));
+}
+
+MACRO_TEST(try_to_uint_success_and_failure) {
+    uint32_t u32;
+    uint64_t u64;
+    MACRO_ASSERT_TRUE(macro_try_to_uint32("0", &u32) && u32 == 0u);
+    MACRO_ASSERT_TRUE(macro_try_to_uint32("4294967295", &u32) && u32 == 0xFFFFFFFFu);
+    MACRO_ASSERT_TRUE(!macro_try_to_uint32("-1", &u32));
+    MACRO_ASSERT_TRUE(!macro_try_to_uint32("4294967296", &u32)); /* overflow */
+
+    MACRO_ASSERT_TRUE(macro_try_to_uint64("18446744073709551615", &u64) && u64 == UINT64_MAX);
+    MACRO_ASSERT_TRUE(!macro_try_to_uint64("18446744073709551616", &u64)); /* overflow */
+}
+
+MACRO_TEST(try_to_int64_boundaries) {
+    int64_t i64;
+    MACRO_ASSERT_TRUE(macro_try_to_int64("9223372036854775807", &i64) && i64 == INT64_MAX);
+    MACRO_ASSERT_TRUE(macro_try_to_int64("-9223372036854775808", &i64) && i64 == INT64_MIN);
+    MACRO_ASSERT_TRUE(!macro_try_to_int64("9223372036854775808", &i64));   /* overflow */
+    MACRO_ASSERT_TRUE(!macro_try_to_int64("-9223372036854775809", &i64));  /* underflow */
+}
+
+MACRO_TEST(try_to_float_double) {
+    float f;
+    double d;
+    MACRO_ASSERT_TRUE(macro_try_to_float("3.5", &f) && f > 3.49f && f < 3.51f);
+    MACRO_ASSERT_TRUE(macro_try_to_double("1e-3", &d) && d > 0.000999 && d < 0.001001);
+    MACRO_ASSERT_TRUE(!macro_try_to_float("x", &f));
+    MACRO_ASSERT_TRUE(!macro_try_to_double("12x", &d));
+}
+
+MACRO_TEST(try_to_bool_strict) {
+    bool b;
+    MACRO_ASSERT_TRUE(macro_try_to_bool("true", &b)  && b == true);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("TrUe", &b)  && b == true);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("false", &b) && b == false);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("FALSE", &b) && b == false);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("1", &b)     && b == true);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("0", &b)     && b == false);
+
+    /* Not accepted by strict try-API */
+    MACRO_ASSERT_TRUE(!macro_try_to_bool("yes", &b));
+    MACRO_ASSERT_TRUE(!macro_try_to_bool("no", &b));
+    MACRO_ASSERT_TRUE(!macro_try_to_bool("", &b));
+    MACRO_ASSERT_TRUE(!macro_try_to_bool(NULL, &b));
 }
 
 /* ---------------- Date/time helpers ---------------- */
@@ -366,6 +442,7 @@ int main(void) {
     MACRO_ADD(tests, string_empty_is_not_default);
 
     MACRO_ADD(tests, conv_to_int_variants);
+    MACRO_ADD(tests, conv_to_int_overflow_defaults);
     MACRO_ADD(tests, conv_to_int_formatting_edges);
     MACRO_ADD(tests, conv_to_uint32_leading_zeros);
     MACRO_ADD(tests, conv_to_uint64_zero_and_max);
@@ -375,6 +452,13 @@ int main(void) {
 
     MACRO_ADD(tests, conv_to_bool_semantics);
     MACRO_ADD(tests, conv_to_bool_case_insensitive_more);
+
+    /* New try_* tests */
+    MACRO_ADD(tests, try_to_int_success_and_failure);
+    MACRO_ADD(tests, try_to_uint_success_and_failure);
+    MACRO_ADD(tests, try_to_int64_boundaries);
+    MACRO_ADD(tests, try_to_float_double);
+    MACRO_ADD(tests, try_to_bool_strict);
 
     MACRO_ADD(tests, datetime_formatters_gmtime);
     MACRO_ADD(tests, datetime_1971_utc);

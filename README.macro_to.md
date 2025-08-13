@@ -1,39 +1,44 @@
-# README.macro\_to.md — Tiny “to/from” & bit-twiddling helpers
+# README.macro\_to.md — Tiny “to/from” & bit helpers
 
-`macro_to.h` bundles small, dependency-free helpers that cover three buckets:
+`macro_to.h` bundles small, dependency‑free helpers in three areas:
 
-1. **Time utilities** (wall-clock microseconds, UTC formatting)
-2. **String → number** conversions with safe defaults
+1. **Time utilities** (wall‑clock microseconds, UTC formatting)
+2. **String → number** conversions with safe defaults (overflow ⇒ default)
 3. **Bit operations** (highest/lowest set bit, popcount)
 
-It’s header-only for the public API, with the inline implementations in `src/macro_to.h`.
+Public header: `the-macro-library/macro_to.h`
+Inline impl:   `the-macro-library/src/macro_to.h`
 
 ---
 
-## TL;DR / Quick start
+## Quick start
 
 ```c
 #include "the-macro-library/macro_to.h"
 
 void demo(void) {
-    // 1) Wall-clock microseconds since Unix epoch (uses gettimeofday)
+    // 1) Wall-clock microseconds since Unix epoch (not monotonic)
     long t_us = macro_to_time();
 
-    // 2) Format UTC datetimes (caller allocates buffers)
+    // 2) UTC formatting (caller allocates the buffers below)
     char dt[20];  // "YYYY-MM-DD hh:mm:ss" + '\0'
     char d[11];   // "YYYY-MM-DD" + '\0'
     time_t now = time(NULL);
     macro_to_date_time(dt, now);
     macro_to_date(d, now);
 
-    // 3) String → number with defaults (strict parsing)
-    int      port   = macro_to_int(getenv("PORT"), 8080);
-    uint64_t limit  = macro_to_uint64("18446744073709551615", 0); // max u64
-    double   ratio  = macro_to_double("0.75e+1", 1.0);             // 7.5
-    bool     debug  = macro_to_bool(getenv("DEBUG"), false);       // "1","t","y" => true
+    // 3) Strict string → number with default fallback
+    int      port  = macro_to_int(getenv("PORT"), 8080);     // invalid/overflow -> 8080
+    uint64_t limit = macro_to_uint64("18446744073709551615", 0); // UINT64_MAX
+    double   r     = macro_to_double("0.75e+1", 1.0);        // 7.5
+    bool     dbg   = macro_to_bool(getenv("DEBUG"), false);  // permissive first-char rules
 
-    // 4) Bits
-    int hi = macro_highest_bit_index(0x8100u);   // 15  (0-based from LSB)
+    // 4) Exact parsing with success flag (no defaults)
+    int v;
+    if (macro_try_to_int("123", &v)) { /* use v */ }
+
+    // 5) Bit ops
+    int hi = macro_highest_bit_index(0x8100u);   // 15
     int lo = macro_lowest_bit_index(0x8100u);    // 8
     int pc = macro_bit_count(0xF0F0u);           // 8
 }
@@ -41,28 +46,24 @@ void demo(void) {
 
 ---
 
-## API surface
+## API
 
 ### Time
 
 * `long macro_to_time(void);`
-  Wall-clock time in **microseconds** since the Unix epoch (`gettimeofday`).
-  *Note:* this is **not monotonic**; jumps if system time changes. Use `macro_time.h` for monotonic timing.
+  Wall‑clock microseconds since Unix epoch (`gettimeofday`). Not monotonic.
 
 * `char *macro_to_date_time(char *dst, time_t ts);`
-  Formats `ts` as **UTC** `"YYYY-MM-DD hh:mm:ss"`.
-  **Buffer requirement:** `dst` must be at least **20** bytes.
+  UTC `"YYYY-MM-DD hh:mm:ss"`. `dst` ≥ 20 bytes. Returns `dst`.
 
 * `char *macro_to_date(char *dst, time_t ts);`
-  Formats `ts` as **UTC** `"YYYY-MM-DD"`.
-  **Buffer requirement:** `dst` must be at least **11** bytes.
+  UTC `"YYYY-MM-DD"`. `dst` ≥ 11 bytes. Returns `dst`.
 
-### String → number (strict parsers with default fallback)
+### String → number (strict with default fallback)
 
-If the input is `NULL` or contains any non-conforming character, **the default value is returned**.
+If input is `NULL`, malformed, or **out of range**, the **default value is returned**.
 
-* `const char *macro_to_string(const char *value, const char *default_value);`
-  Returns `value` if non-NULL, else `default_value`.
+* `const char *macro_to_string(const char *s, const char *def);`
 
 * `int      macro_to_int     (const char *s, int      def);`
 
@@ -76,92 +77,85 @@ If the input is `NULL` or contains any non-conforming character, **the default v
 
 * `uint64_t macro_to_uint64  (const char *s, uint64_t def);`
 
-Parsing rules for the integer family:
+* `float    macro_to_float   (const char *s, float    def);`
 
-* Accepts **optional leading `-`** for signed variants; **unsigned do not accept signs**.
-* Accepts **only decimal digits** after the sign (no whitespace, `+`, hex, underscores, etc.).
-* **No range checks** are performed; out-of-range values may wrap during accumulation.
-* Any invalid character → returns `def`.
+* `double   macro_to_double  (const char *s, double   def);`
 
-Floating-point:
+* `bool     macro_to_bool    (const char *s, bool     def);`
 
-* `float  macro_to_float (const char *s, float  def);`
-* `double macro_to_double(const char *s, double def);`
+**Integer parsing rules (for the `macro_to_*` family):**
 
-These use `strtof/strtod` and require **full consumption** of the string:
+* Decimal only. No spaces, no `+`, no hex, no underscores.
+* Signed variants accept an optional leading `-`; unsigned do not accept signs.
+* Entire string must match the form; any extra characters cause fallback.
+* **Overflow/underflow ⇒ return the default.**
 
-* Accept standard decimal and exponent notation (e.g., `"3.14"`, `"1e-6"`).
-* If parsing fails or leaves trailing characters → returns `def`.
-* Respects the **current C locale** for decimal separator.
+**Floating‑point (`strtof`/`strtod`):**
 
-Booleans:
+* Decimal and exponent notation (e.g., `"3.14"`, `"1e-6"`).
+* Requires full consumption of the string; trailing junk ⇒ default.
+* Honors the C locale’s decimal separator.
 
-* `bool macro_to_bool(const char *s, bool def);`
-  Lightweight check of the **first character only**:
+**Booleans (permissive):**
 
-    * When `def == true`, strings starting with `f/F/0/n/N` → `false`, else `true`.
-    * When `def == false`, strings starting with `t/T/1/y/Y` → `true`, else `false`.
+* `macro_to_bool(s, def)` checks only the first character:
+
+  * If `def == true`: `f/F/0/n/N` ⇒ `false`, else `true`.
+  * If `def == false`: `t/T/1/y/Y` ⇒ `true`, else `false`.
+
+### Try‑conversions (strict, no defaults)
+
+These return `true` on success and write the parsed value to `*out`. On failure (NULL, junk, overflow, underflow), return `false` and leave `*out` unspecified.
+
+* `bool macro_try_to_int     (const char *s, int      *out);`
+* `bool macro_try_to_long    (const char *s, long     *out);`
+* `bool macro_try_to_int32   (const char *s, int32_t  *out);`
+* `bool macro_try_to_uint32  (const char *s, uint32_t *out);`
+* `bool macro_try_to_int64   (const char *s, int64_t  *out);`
+* `bool macro_try_to_uint64  (const char *s, uint64_t *out);`
+* `bool macro_try_to_float   (const char *s, float    *out);`
+* `bool macro_try_to_double  (const char *s, double   *out);`
+* `bool macro_try_to_bool    (const char *s, bool     *out);`
+
+**Notes:**
+
+* Integer rules match the `macro_to_*` family and perform explicit range checks.
+* Float/double use `strtof/strtod` with full‑string consumption.
+* `macro_try_to_bool` is **strict**: accepts `"true"`/`"false"` (case‑insensitive) and `"1"`/`"0"` only.
 
 ### Bit operations
 
 * `int macro_highest_bit_index(uint32_t x);`
 
 * `int macro_highest_bit_index64(uint64_t x);`
-  Returns index (0 = LSB) of the **most significant** set bit, or **-1** if `x == 0`.
-  Uses `__builtin_clz/ll` when available; falls back to a loop.
+  Index (0 = LSB) of the most significant set bit; **-1 if x == 0**.
 
 * `int macro_lowest_bit_index(uint32_t x);`
 
 * `int macro_lowest_bit_index64(uint64_t x);`
-  Returns index (0 = LSB) of the **least significant** set bit, or **-1** if `x == 0`.
-  Uses `__builtin_ctz/ll` when available; falls back to a loop.
+  Index (0 = LSB) of the least significant set bit; **-1 if x == 0**.
 
 * `int macro_bit_count(uint32_t x);`
 
 * `int macro_bit_count64(uint64_t x);`
-  Population count (set bits). Uses `__builtin_popcount/ll` when available.
+  Population count (set bits).
+
+Builtins (`__builtin_clz/ctz/popcount`) are used when available; otherwise simple loops.
 
 ---
 
-## Behavior details & caveats
+## Behavior notes
 
-### Time formatting
-
-* Both `macro_to_date_time` and `macro_to_date` use **UTC** via `gmtime_r` (thread-safe).
-* They write NUL-terminated strings into your buffers.
-* If you prefer local time, convert via `localtime_r` in your own wrapper.
-
-### `macro_to_time()`
-
-* Returns a **wall-clock** timestamp (microseconds) using `gettimeofday`.
-  If your application requires **monotonic** elapsed timing, prefer `macro_time.h`’s `macro_now()` family.
-* Return type is `long`; on some 32-bit platforms this may overflow earlier. Most modern targets use 64-bit `long` on 64-bit OSes.
-
-### Integer parsing
-
-* These parsers are **strict and fast**. Any character outside the accepted set causes an immediate fallback to `def`.
-* There is **no overflow detection**; extremely large values may wrap during accumulation.
-* If you need fully robust error/overflow handling, use `strtol/strtoll/strtoul` with explicit bounds checking.
-
-### Floating-point parsing
-
-* Uses the C library’s `strtof/strtod`.
-* Honors the current locale’s decimal separator.
-
-### Booleans
-
-* Minimal, fast check based on the **first character**, useful for flags like `"0"/"1"`, `"true"/"false"`, `"yes"/"no"`.
-
-### Performance
-
-* All functions are `static inline` and compile down to tiny call-site code.
-* On GCC/Clang, bit routines usually become single instructions (`clz/ctz/popcnt`) when supported.
+* **Overflow policy (new):** all integer conversions now return the **default** on overflow/underflow.
+  Previously, extremely large values could wrap during accumulation.
+* `macro_to_bool` remains permissive (first‑char), while `macro_try_to_bool` is strict.
+* `macro_to_time()` is wall‑clock, not monotonic. Use a monotonic clock for timing intervals.
 
 ---
 
 ## Examples
 
-### Environment defaults
+### Environment with defaults
 
 ```c
 const char *host = macro_to_string(getenv("HOST"), "127.0.0.1");
@@ -169,55 +163,53 @@ int         port = macro_to_int(getenv("PORT"), 8080);
 bool        tls  = macro_to_bool(getenv("TLS"), false);
 ```
 
-### Strict numeric parsing with fallback
+### Strict parse with error handling
 
 ```c
-int32_t workers = macro_to_int32("16", 4);      // 16
-int32_t bad     = macro_to_int32("16x", 4);     // -> 4 (default)
-uint64_t cap    = macro_to_uint64(NULL, 1000);  // -> 1000
+uint64_t cap;
+if (!macro_try_to_uint64(env_cap_str, &cap)) {
+    cap = 1000; // fallback path on parse failure or overflow
+}
 ```
 
-### Date strings (UTC)
+### Signed/unsigned boundaries
 
 ```c
-char buf_dt[20], buf_d[11];
-time_t ts = time(NULL);
-printf("UTC now: %s\n", macro_to_date_time(buf_dt, ts));
-printf("UTC day: %s\n", macro_to_date(buf_d, ts));
+int32_t a = macro_to_int32("2147483647", -1);       // OK
+int32_t b = macro_to_int32("2147483648", -1);       // overflow -> -1
+
+uint32_t u = macro_to_uint32("4294967295", 0);      // OK
+uint32_t v = macro_to_uint32("4294967296", 0);      // overflow -> 0
+```
+
+### Booleans: permissive vs strict
+
+```c
+bool b1 = macro_to_bool("yes", false);  // true (permissive)
+bool b2;
+bool ok = macro_try_to_bool("yes", &b2); // false (strict), b2 unspecified
 ```
 
 ### Bit ops
 
 ```c
-uint32_t x = 0b1001'0000; // 0x90
-printf("hi=%d lo=%d pc=%d\n",
-       macro_highest_bit_index(x),   // 7
-       macro_lowest_bit_index(x),    // 4
-       macro_bit_count(x));          // 2
+uint64_t x = 0x8000000000000010ull; // bits 4 and 63 set
+int hi = macro_highest_bit_index64(x); // 63
+int lo = macro_lowest_bit_index64(x);  // 4
+int pc = macro_bit_count64(x);         // 2
 ```
 
 ---
 
-## Building & linkage
+## Portability
 
-* **Public header:** `the-macro-library/macro_to.h`
-* **Inline implementation:** `the-macro-library/src/macro_to.h` (included by the public header)
-* Header-only from the user’s perspective; no library linking required.
-
----
-
-## Portability notes
-
-* Requires a POSIX-like environment for `gettimeofday`, `gmtime_r`, and standard C library functions.
-* On Windows/MSVC:
-
-    * Replace `gettimeofday` with a shim (e.g., `QueryPerformanceCounter` or `_ftime_s`) if you need `macro_to_time` there.
-    * Use `gmtime_s` instead of `gmtime_r` (you can wrap it with a macro if needed).
+* Uses `gettimeofday` and `gmtime_r` (POSIX). On Windows, provide shims (`QueryPerformanceCounter`, `gmtime_s`) if needed.
+* All functions are `static inline`; no linking step is required.
 
 ---
 
-## Design philosophy
+## Upgrading from older versions
 
-* **Predictable on failure**: All conversion routines return a **caller-supplied default** on malformed input.
-* **Tiny & inlinable**: Favor fast, branch-light code; pull in builtins when available.
-* **Pragmatic**: These are building blocks for configs, flags, and fast math — not full replacements for robust parsing libraries.
+* Integer conversions now fail closed: **overflow/underflow returns the default** instead of producing wrapped results.
+* Add `macro_try_to_*` if you need a success/failure signal without defaults.
+* Existing permissive boolean behavior is unchanged; use `macro_try_to_bool` for strict `true/false` or `1/0` parsing.
