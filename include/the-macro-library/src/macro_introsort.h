@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef _macro_introsort_H
 #define _macro_introsort_H
 
@@ -33,14 +35,14 @@
 /* One portable branch using compiler builtins when available */
 #if defined(__GNUC__) || defined(__clang__)
   #if ULONG_MAX > 0xFFFFFFFFul
-    #define __mcro_introsort_max_depth(n) \
+    #define __mcro_introsort_max_depth(n)    \
       depth_limit = ((int)(64 - __builtin_clzl((unsigned long)(n)) - 1)) << 1
   #else
-    #define __mcro_introsort_max_depth(n) \
+    #define __mcro_introsort_max_depth(n)    \
       depth_limit = ((int)(32 - __builtin_clz((unsigned)(n)) - 1)) << 1
   #endif
 #else
-  #define __mcro_introsort_max_depth(n)  /* loop fallback */ \
+  #define __mcro_introsort_max_depth(n)  /* loop fallback */    \
       tmp_n = (n); depth_limit = 0; while (tmp_n >>= 1) depth_limit++; depth_limit <<= 1
 #endif
 
@@ -53,21 +55,21 @@ typedef struct {
   size_t n;
 } __macro_introsort_stack_t;
 
-#define __macro_push_and_loop(top, arr, num, left, left_n, right, right_n, loop, pop) \
-    if ((left_n) > 1) {                                                              \
-        if ((left_n) < (right_n)) {                                                  \
-            (top)->base = (right); (top)->n = (right_n); (top)++;                    \
-            (arr) = (left);  (num) = (left_n);  goto loop;                           \
-        } else if((right_n) > 1) {                                                   \
-            (top)->base = (left);  (top)->n = (left_n);  (top)++;                    \
-            (arr) = (right); (num) = (right_n); goto loop;                           \
-        } else {                                                                     \
-            (arr) = (left);  (num) = (left_n);  goto loop;                           \
-        }                                                                            \
-    } else if ((right_n) > 1) {                                                      \
-        (arr) = (right); (num) = (right_n); goto loop;                               \
-    } else {                                                                         \
-        goto pop;                                                                    \
+#define __macro_push_and_loop(top, arr, num, left, left_n, right, right_n, loop, pop)    \
+    if ((left_n) > 1) {                                                                  \
+        if ((left_n) < (right_n)) {                                                      \
+            (top)->base = (right); (top)->n = (right_n); (top)++;                        \
+            (arr) = (left);  (num) = (left_n);  goto loop;                               \
+        } else if((right_n) > 1) {                                                       \
+            (top)->base = (left);  (top)->n = (left_n);  (top)++;                        \
+            (arr) = (right); (num) = (right_n); goto loop;                               \
+        } else {                                                                         \
+            (arr) = (left);  (num) = (left_n);  goto loop;                               \
+        }                                                                                \
+    } else if ((right_n) > 1) {                                                          \
+        (arr) = (right); (num) = (right_n); goto loop;                                   \
+    } else {                                                                             \
+        goto pop;                                                                        \
     }
 
 #define __macro_mid3(style, type, cmp, a, b, c)       \
@@ -118,70 +120,69 @@ typedef struct {
     add
     type tmp_items[5]; to support macro_introsort_experimental
 */
-#define __macro_introsort_vars(type)                            \
-    type* c; type* d; type* f; type* lo; type* mid; type* hi;   \
-    size_t left_n, right_n, tmp_n, delta;                       \
-    int depth_limit;                                            \
-    __macro_introsort_stack_t stack[64];                        \
-    __macro_introsort_stack_t *top = stack;                     \
-    top->base = NULL;                                           \
-    top++;                                                      \
+#define __macro_introsort_vars(type)                             \
+    type* c; type* d; type* f; type* lo; type* mid; type* hi;    \
+    size_t left_n, right_n, tmp_n, delta;                        \
+    int depth_limit;                                             \
+    __macro_introsort_stack_t stack[64];                         \
+    __macro_introsort_stack_t *top = stack;                      \
+    top->base = NULL;                                            \
+    top++;                                                       \
     int cur_depth = 0
 
 #define __macro_introsort_ivars(type)    \
-    type* a; type* b; type* e;                     \
+    type* a; type* b; type* e;           \
     type tmp
 
-#define __macro_introsort_code(style, type, cmp)                  \
-    __macro_introsort_ivars(type);                                \
-    if(n < 17) {                                                  \
-        macro_micro_check_reverse_on(style, type, cmp, base, n, a, b)  \
-        macro_isort(style, type, cmp, base, n, e, a, b, tmp );    \
-        return;                                                   \
-    }                                                             \
-    __macro_introsort_vars(type);                                 \
-    __mcro_introsort_max_depth(n);                                \
-    macro_check_sorted(style, type, cmp,                          \
-                       base, n,                                   \
-                       lo, mid, hi,                               \
-                       delta, a, b,                 \
-                       find_pivot, partition)                     \
-    return;                                                       \
-hi_mid_low:;                                                      \
-    __macro_lo_mid_hi();                                          \
-find_pivot:;                                                      \
-    if(n > 40) {                                                  \
-        __macro_pivot_ninther(style, type, cmp);                  \
-    } else {                                                      \
-        __macro_pivot_5ther(style, type, cmp);                    \
-    }                                                             \
-partition:;                                                       \
-    if(cur_depth < depth_limit) {                                 \
-        macro_dutch_flag_partition(qs, style, type, cmp,          \
-                                   lo, mid, hi,                   \
-                                   a, b, c, d,                    \
-                                   left_n, right_n, tmp_n)        \
-        __macro_push_and_loop(top, base, n,                       \
-                              b, left_n, c, right_n,              \
-                              loop, pop_stack);                   \
-    } else {                                                      \
-        a = base;                                                 \
-        macro_heap_sort(style, type, cmp, base, n,                \
-                        a, b, c, d, e, f)                         \
-    }                                                             \
-pop_stack:;                                                       \
-    top--;                                                        \
-    base = (type *)top->base;                                     \
-    if (!base) return;                                            \
-    n = top->n;                                                   \
-    cur_depth = top-stack;                                        \
-loop:;                                                            \
-    cur_depth++;                                                  \
-small_sort:;                                                      \
-    if(n < 17) {                                                  \
-        macro_isort(style, type, cmp, base, n, e, a, b, tmp );    \
-        goto pop_stack;                                           \
-    }                                                             \
+#define __macro_introsort_code(style, type, cmp)                         \
+    __macro_introsort_ivars(type);                                       \
+    if(n < 17) {                                                         \
+        macro_micro_check_reverse_on(style, type, cmp, base, n, a, b)    \
+        macro_isort(style, type, cmp, base, n, e, a, b, tmp );           \
+        return;                                                          \
+    }                                                                    \
+    __macro_introsort_vars(type);                                        \
+    __mcro_introsort_max_depth(n);                                       \
+    macro_check_sorted(style, type, cmp,                                 \
+                       base, n,                                          \
+                       lo, mid, hi,                                      \
+                       delta, a, b,                                      \
+                       find_pivot, partition)                            \
+    return;                                                              \
+hi_mid_low:;                                                             \
+    __macro_lo_mid_hi();                                                 \
+find_pivot:;                                                             \
+    if(n > 40) {                                                         \
+        __macro_pivot_ninther(style, type, cmp);                         \
+    } else {                                                             \
+        __macro_pivot_5ther(style, type, cmp);                           \
+    }                                                                    \
+partition:;                                                              \
+    if(cur_depth < depth_limit) {                                        \
+        macro_dutch_flag_partition(qs, style, type, cmp,                 \
+                                   lo, mid, hi,                          \
+                                   a, b, c, d,                           \
+                                   left_n, right_n, tmp_n)               \
+        __macro_push_and_loop(top, base, n,                              \
+                              b, left_n, c, right_n,                     \
+                              loop, pop_stack);                          \
+    } else {                                                             \
+        a = base;                                                        \
+        macro_heap_sort(style, type, cmp, base, n,                       \
+                        a, b, c, d, e, f)                                \
+    }                                                                    \
+pop_stack:;                                                              \
+    top--;                                                               \
+    base = (type *)top->base;                                            \
+    if (!base) return;                                                   \
+    n = top->n;                                                          \
+    cur_depth = top-stack;                                               \
+loop:;                                                                   \
+    cur_depth++;                                                         \
+    if(n < 17) {                                                         \
+        macro_isort(style, type, cmp, base, n, e, a, b, tmp );           \
+        goto pop_stack;                                                  \
+    }                                                                    \
     goto hi_mid_low;
 
 
@@ -204,4 +205,3 @@ macro_introsort_compare_h(name, style, type) {        \
 }
 
 #endif
-

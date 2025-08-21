@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
@@ -18,11 +21,11 @@ static bool pair_less_kv(const pair_t *a, const pair_t *b) {
 
 /* ---------- Generate sort functions ---------- */
 /* value-type (int) */
-macro_sort         (sort_int,     int,     int_less);
-macro_sort_compare (sort_int_cmp, int);
+macro_sort         (sort_int,     int,     int_less)
+macro_sort_compare (sort_int_cmp, int)
 /* KV pair */
-macro_sort         (sort_pair,     pair_t,  pair_less_kv);
-macro_sort_compare (sort_pair_cmp, pair_t);
+macro_sort         (sort_pair,     pair_t,  pair_less_kv)
+macro_sort_compare (sort_pair_cmp, pair_t)
 
 /* ---------- Helpers ---------- */
 static bool is_sorted_int(const int *a, size_t n) {

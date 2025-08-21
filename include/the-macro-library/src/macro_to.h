@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2019-2025 Andy Curtis <contactandyc@gmail.com>
-// SPDX-FileCopyrightText: 2024-2025 Knode.ai
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef _macro_to_H
 #define _macro_to_H
 
@@ -10,6 +11,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <limits.h>
+#include <strings.h>
 
 /* ---------------- Bit helpers ---------------- */
 
@@ -79,7 +81,7 @@ static inline int macro_bit_count64(uint64_t x) {
 
 /* ---------------- Time / date helpers ---------------- */
 
-static inline long macro_to_time() {
+static inline long macro_to_time(void) {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return (tv.tv_sec * 1000000L) + tv.tv_usec;

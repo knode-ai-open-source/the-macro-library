@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef _macro_map_H
 #define _macro_map_H
 
@@ -14,12 +16,21 @@
 
 #include "the-macro-library/macro_cmp.h"
 
+#ifndef STATIC_ASSERT
+#  if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#    define STATIC_ASSERT(cond, msg) _Static_assert((cond), msg)
+#  else
+     /* C99 fallback */
+#    define STATIC_ASSERT(cond, msg) typedef char static_assertion_##__LINE__[(cond)?1:-1]
+#  endif
+#endif
+
 #ifndef UINTPTR_MAX
 /* Fallback: assume size_t can carry a pointer (common but not guaranteed) */
 typedef size_t uintptr_t;
 #endif
 
-_Static_assert(sizeof(uintptr_t) >= sizeof(void*), "uintptr_t too small");
+STATIC_ASSERT(sizeof(uintptr_t) >= sizeof(void*), "uintptr_t too small");
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Attribute goes AFTER the typedef name */
@@ -82,7 +93,7 @@ static void _macro_map_fix_insert(macro_map_t *node, macro_map_t *parent, macro_
 #define _macro_map_set_black(n)  ((n)->parent_color |=  (uintptr_t)1)
 #define _macro_map_set_red(n)    ((n)->parent_color &= ~(uintptr_t)1)
 #define _macro_map_parent(n)     ((macro_map_t *)((n)->parent_color & ~(uintptr_t)1))
-#define _macro_map_set_parent(n, parent) \
+#define _macro_map_set_parent(n, parent)    \
     ((n)->parent_color = ((n)->parent_color & (uintptr_t)1) | (uintptr_t)(parent))
 
 /* iteration */
@@ -394,7 +405,7 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
   Given an address of a member of a structure, the base object type, and the
   field name, return the address of the base structure.
 */
-#define macro_parent_object(addr, base_type, field) \
+#define macro_parent_object(addr, base_type, field)    \
   ((base_type *)((char *)(addr) - offsetof(base_type, field)))
 
 
@@ -590,13 +601,13 @@ static bool macro_map_erase(macro_map_t **root, macro_map_t *node) {
 
 #define _macro_map_kv_compare_h(name, style, key_type, value_type) _macro_map_kv_h(name, compare_ ## style, key_type, value_type)
 
-#define _macro_map_kv_compare(name, find_style, style, key_type, value_type)             \
-    _macro_map_kv_compare_h(name, style, key_type, value_type) {                         \
+#define _macro_map_kv_compare(name, find_style, style, key_type, value_type)            \
+    _macro_map_kv_compare_h(name, style, key_type, value_type) {                        \
         _macro_map_kv_code(root, find_style, style, key_type, value_type, cmp, key);    \
     }
 
-#define _macro_map_kv_compare_with_field(name, field, find_style, style, key_type, value_type)             \
-    _macro_map_kv_compare_h(name, style, key_type, value_type) {                                           \
+#define _macro_map_kv_compare_with_field(name, field, find_style, style, key_type, value_type)            \
+    _macro_map_kv_compare_h(name, style, key_type, value_type) {                                          \
         _macro_map_kv_code_with_field(root, field, find_style, style, key_type, value_type, cmp, key);    \
     }
 

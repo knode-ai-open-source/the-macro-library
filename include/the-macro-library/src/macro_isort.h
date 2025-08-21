@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef _macro_isort_H
 #define _macro_isort_H
 
@@ -11,31 +13,31 @@
 
 #define macro_micro_check_reverse_off(style, type, cmp, base, n, xp, yp)
 
-#define macro_micro_check_reverse_on(style, type, cmp, base, n, xp, yp)              \
-    if(n > 7) { \
-        xp = base;                                                              \
-        yp = xp+(n-1);                                                        \
-        if(macro_less(style, type, cmp, yp, xp )) {                           \
-            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;         \
-            xp += 2;                                                  \
-            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;         \
-            xp += 2;                                                  \
-            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;         \
-            xp += 2;                                                  \
-            if(macro_less(style, type, cmp, xp, yp)) goto after_micro_check;         \
-            xp = yp;    \
-            while(xp > base) {                                                    \
-                if(macro_less(style, type, cmp, xp-1, xp)) goto after_micro_check;        \
-                xp--;                                                             \
-            }                                                                     \
-            while(xp < yp) {                                                  \
-                macro_swap(xp, yp);                                           \
-                xp++;                                                           \
-                yp--;                                                           \
-            }                                                                     \
-            return; \
-        } \
-    }   \
+#define macro_micro_check_reverse_on(style, type, cmp, base, n, xp, yp)               \
+    if(n > 7) {                                                                       \
+        xp = base;                                                                    \
+        yp = xp+(n-1);                                                                \
+        if(macro_less(style, type, cmp, yp, xp )) {                                   \
+            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;        \
+            xp += 2;                                                                  \
+            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;        \
+            xp += 2;                                                                  \
+            if(macro_less(style, type, cmp, xp, xp+2)) goto after_micro_check;        \
+            xp += 2;                                                                  \
+            if(macro_less(style, type, cmp, xp, yp)) goto after_micro_check;          \
+            xp = yp;                                                                  \
+            while(xp > base) {                                                        \
+                if(macro_less(style, type, cmp, xp-1, xp)) goto after_micro_check;    \
+                xp--;                                                                 \
+            }                                                                         \
+            while(xp < yp) {                                                          \
+                macro_swap(xp, yp);                                                   \
+                xp++;                                                                 \
+                yp--;                                                                 \
+            }                                                                         \
+            return;                                                                   \
+        }                                                                             \
+    }                                                                                 \
     after_micro_check:;
 
 

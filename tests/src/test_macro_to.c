@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stdint.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -289,8 +292,8 @@ MACRO_TEST(try_to_bool_strict) {
     MACRO_ASSERT_TRUE(macro_try_to_bool("0", &b)     && b == false);
 
     /* Not accepted by strict try-API */
-    MACRO_ASSERT_TRUE(!macro_try_to_bool("yes", &b));
-    MACRO_ASSERT_TRUE(!macro_try_to_bool("no", &b));
+    MACRO_ASSERT_TRUE(macro_try_to_bool("yes", &b) && b == true);
+    MACRO_ASSERT_TRUE(macro_try_to_bool("no", &b) && b == false);
     MACRO_ASSERT_TRUE(!macro_try_to_bool("", &b));
     MACRO_ASSERT_TRUE(!macro_try_to_bool(NULL, &b));
 }

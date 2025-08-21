@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
@@ -31,22 +34,22 @@ static bool is_max_heap_int(const int *a, size_t n) {
 /* ---------- heap types + API generation ---------- */
 macro_heap_t(IntHeap, int);
 
-macro_min_heap_push          (min_heap_push_int,  less_no_arg, int, int_less, IntHeap);
-macro_min_heap_pop           (min_heap_pop_int,   less_no_arg, int, int_less, IntHeap);
-macro_min_heap_replace       (min_heap_replace_int, less_no_arg, int, int_less, IntHeap);
+macro_min_heap_push          (min_heap_push_int,  less_no_arg, int, int_less, IntHeap)
+macro_min_heap_pop           (min_heap_pop_int,   less_no_arg, int, int_less, IntHeap)
+macro_min_heap_replace       (min_heap_replace_int, less_no_arg, int, int_less, IntHeap)
 
-macro_max_heap_push          (max_heap_push_int,  less_no_arg, int, int_less, IntHeap);
-macro_max_heap_pop           (max_heap_pop_int,   less_no_arg, int, int_less, IntHeap);
-macro_max_heap_replace       (max_heap_replace_int, less_no_arg, int, int_less, IntHeap);
+macro_max_heap_push          (max_heap_push_int,  less_no_arg, int, int_less, IntHeap)
+macro_max_heap_pop           (max_heap_pop_int,   less_no_arg, int, int_less, IntHeap)
+macro_max_heap_replace       (max_heap_replace_int, less_no_arg, int, int_less, IntHeap)
 
 /* compare-API (runtime comparator) */
-macro_min_heap_push_compare     (min_heap_push_int_cmp,  less_no_arg, int, IntHeap);
-macro_min_heap_pop_compare      (min_heap_pop_int_cmp,   less_no_arg, int, IntHeap);
-macro_min_heap_replace_compare  (min_heap_replace_int_cmp, less_no_arg, int, IntHeap);
+macro_min_heap_push_compare     (min_heap_push_int_cmp,  less_no_arg, int, IntHeap)
+macro_min_heap_pop_compare      (min_heap_pop_int_cmp,   less_no_arg, int, IntHeap)
+macro_min_heap_replace_compare  (min_heap_replace_int_cmp, less_no_arg, int, IntHeap)
 
-macro_max_heap_push_compare     (max_heap_push_int_cmp,  less_no_arg, int, IntHeap);
-macro_max_heap_pop_compare      (max_heap_pop_int_cmp,   less_no_arg, int, IntHeap);
-macro_max_heap_replace_compare  (max_heap_replace_int_cmp, less_no_arg, int, IntHeap);
+macro_max_heap_push_compare     (max_heap_push_int_cmp,  less_no_arg, int, IntHeap)
+macro_max_heap_pop_compare      (max_heap_pop_int_cmp,   less_no_arg, int, IntHeap)
+macro_max_heap_replace_compare  (max_heap_replace_int_cmp, less_no_arg, int, IntHeap)
 
 /* helpers to use API correctly: put value at arr[num], then push */
 static void push_min(IntHeap *h, int x) { h->arr[h->num] = x; min_heap_push_int(h); }

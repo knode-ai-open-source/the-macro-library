@@ -1,8 +1,11 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
-// SPDX-FileCopyrightText: 2024-2025 Knode.ai
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef _MACRO_TO_H
 #define _MACRO_TO_H
+
+#include <stdbool.h>
 
 /*
   This header declares the public API for conversion, bit, and time helpers.
@@ -17,7 +20,7 @@
  * -------------------------------------------------------------------------- */
 
 /* Returns the current time in microseconds since the Unix epoch. */
-static inline long macro_to_time();
+static inline long macro_to_time(void);
 
 /* Converts a timestamp to "YYYY-MM-DD hh:mm:ss".
    Requires a buffer of at least 20 bytes. */

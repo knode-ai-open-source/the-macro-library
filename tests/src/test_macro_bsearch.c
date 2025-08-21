@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -22,39 +25,39 @@ macro_bsearch_kv_compare_h        (bs_core_kv_cmp,            int, pair_t);
 
 /* ---------- Generate bsearch functions (non-compare variants) ---------- */
 /* Value-type (int) using compile-time comparator symbol */
-macro_bsearch         (bs_core_int,           int, int_cmp_noarg);
-macro_bsearch_first   (bs_first_int,          int, int_cmp_noarg);
-macro_bsearch_last    (bs_last_int,           int, int_cmp_noarg);
-macro_bsearch_lower_bound (bs_lower_bound_int,    int, int_cmp_noarg);
-macro_bsearch_upper_bound (bs_upper_bound_int,    int, int_cmp_noarg);
-macro_bsearch_floor       (bs_floor_int,          int, int_cmp_noarg);
-macro_bsearch_ceiling     (bs_ceiling_int,        int, int_cmp_noarg);
+macro_bsearch         (bs_core_int,           int, int_cmp_noarg)
+macro_bsearch_first   (bs_first_int,          int, int_cmp_noarg)
+macro_bsearch_last    (bs_last_int,           int, int_cmp_noarg)
+macro_bsearch_lower_bound (bs_lower_bound_int,    int, int_cmp_noarg)
+macro_bsearch_upper_bound (bs_upper_bound_int,    int, int_cmp_noarg)
+macro_bsearch_floor       (bs_floor_int,          int, int_cmp_noarg)
+macro_bsearch_ceiling     (bs_ceiling_int,        int, int_cmp_noarg)
 
 /* KV (key=int, value=pair_t) */
-macro_bsearch_kv           (bs_core_kv,           int, pair_t, kv_cmp_noarg);
-macro_bsearch_first_kv     (bs_first_kv,          int, pair_t, kv_cmp_noarg);
-macro_bsearch_last_kv      (bs_last_kv,           int, pair_t, kv_cmp_noarg);
-macro_bsearch_lower_bound_kv (bs_lower_bound_kv,  int, pair_t, kv_cmp_noarg);
-macro_bsearch_upper_bound_kv (bs_upper_bound_kv,  int, pair_t, kv_cmp_noarg);
-macro_bsearch_floor_kv       (bs_floor_kv,        int, pair_t, kv_cmp_noarg);
-macro_bsearch_ceiling_kv     (bs_ceiling_kv,      int, pair_t, kv_cmp_noarg);
+macro_bsearch_kv           (bs_core_kv,           int, pair_t, kv_cmp_noarg)
+macro_bsearch_first_kv     (bs_first_kv,          int, pair_t, kv_cmp_noarg)
+macro_bsearch_last_kv      (bs_last_kv,           int, pair_t, kv_cmp_noarg)
+macro_bsearch_lower_bound_kv (bs_lower_bound_kv,  int, pair_t, kv_cmp_noarg)
+macro_bsearch_upper_bound_kv (bs_upper_bound_kv,  int, pair_t, kv_cmp_noarg)
+macro_bsearch_floor_kv       (bs_floor_kv,        int, pair_t, kv_cmp_noarg)
+macro_bsearch_ceiling_kv     (bs_ceiling_kv,      int, pair_t, kv_cmp_noarg)
 
 /* Compare-API declarations/definitions that rely on compare_ ## style */
-macro_bsearch_compare           (bs_core_int_cmp,           int);
-macro_bsearch_first_compare       (bs_first_int_cmp,          int);
-macro_bsearch_last_compare        (bs_last_int_cmp,           int);
-macro_bsearch_lower_bound_compare (bs_lower_bound_int_cmp,    int);
-macro_bsearch_upper_bound_compare (bs_upper_bound_int_cmp,    int);
-macro_bsearch_floor_compare       (bs_floor_int_cmp,          int);
-macro_bsearch_ceiling_compare     (bs_ceiling_int_cmp,        int);
+macro_bsearch_compare           (bs_core_int_cmp,           int)
+macro_bsearch_first_compare       (bs_first_int_cmp,          int)
+macro_bsearch_last_compare        (bs_last_int_cmp,           int)
+macro_bsearch_lower_bound_compare (bs_lower_bound_int_cmp,    int)
+macro_bsearch_upper_bound_compare (bs_upper_bound_int_cmp,    int)
+macro_bsearch_floor_compare       (bs_floor_int_cmp,          int)
+macro_bsearch_ceiling_compare     (bs_ceiling_int_cmp,        int)
 
-macro_bsearch_kv_compare        (bs_core_kv_cmp,            int, pair_t);
-macro_bsearch_first_kv_compare    (bs_first_kv_cmp,           int, pair_t);
-macro_bsearch_last_kv_compare     (bs_last_kv_cmp,            int, pair_t);
-macro_bsearch_lower_bound_kv_compare (bs_lower_bound_kv_cmp,  int, pair_t);
-macro_bsearch_upper_bound_kv_compare (bs_upper_bound_kv_cmp,  int, pair_t);
-macro_bsearch_floor_kv_compare       (bs_floor_kv_cmp,        int, pair_t);
-macro_bsearch_ceiling_kv_compare     (bs_ceiling_kv_cmp,      int, pair_t);
+macro_bsearch_kv_compare        (bs_core_kv_cmp,            int, pair_t)
+macro_bsearch_first_kv_compare    (bs_first_kv_cmp,           int, pair_t)
+macro_bsearch_last_kv_compare     (bs_last_kv_cmp,            int, pair_t)
+macro_bsearch_lower_bound_kv_compare (bs_lower_bound_kv_cmp,  int, pair_t)
+macro_bsearch_upper_bound_kv_compare (bs_upper_bound_kv_cmp,  int, pair_t)
+macro_bsearch_floor_kv_compare       (bs_floor_kv_cmp,        int, pair_t)
+macro_bsearch_ceiling_kv_compare     (bs_ceiling_kv_cmp,      int, pair_t)
 
 /* ---------- Fixtures ---------- */
 static int A[] = {1,2,2,2,4,5};

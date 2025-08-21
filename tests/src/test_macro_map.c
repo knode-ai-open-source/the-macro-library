@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,12 +43,6 @@ static void assert_inorder_sorted(macro_map_t *root) {
     }
 }
 
-static size_t count_nodes_inorder(macro_map_t *root) {
-    size_t c = 0;
-    for (macro_map_t *p = macro_map_first(root); p; p = macro_map_next(p)) ++c;
-    return c;
-}
-
 /* Collect inorder keys into an array for reference comparisons */
 static size_t collect_inorder(macro_map_t *root, int *out, size_t cap) {
     size_t c = 0;
@@ -66,11 +63,11 @@ static int int_cmp(const void *a, const void *b) {
 /* ----- generate functions (with-field) ----- */
 
 /* unique and multi insert */
-macro_map_insert_with_field     (map_insert,  link, Node, node_cmp_noarg);
-macro_multimap_insert_with_field(mmap_insert, link, Node, node_cmp_noarg);
+macro_map_insert_with_field     (map_insert,  link, Node, node_cmp_noarg)
+macro_multimap_insert_with_field(mmap_insert, link, Node, node_cmp_noarg)
 
 /* find (kv) */
-macro_map_find_kv_with_field(map_find_kv, link, int, Node, kv_cmp_noarg);
+macro_map_find_kv_with_field(map_find_kv, link, int, Node, kv_cmp_noarg)
 
 /* bounds (kv) via internal helpers to test all flavors */
 _macro_map_kv_with_field(map_find_first,     link, first,       macro_map_default(), int, Node, kv_cmp_noarg)
@@ -116,8 +113,6 @@ static void check_invariants(macro_map_t *root) {
             if (expected == -1) expected = bh;
             MACRO_ASSERT_EQ_INT(expected, bh);
         } else {
-            int next_b = f.blacks + (_macro_map_is_black(n) ? 1 : 0) - (_macro_map_is_black(n) ? 1 : 0);
-            /* next_b == f.blacks; we counted at push time */
             if (n->left)  st[sp++] = (struct Frame){ n->left,  f.blacks + (_macro_map_is_black(n->left)?1:0) };
             if (n->right) st[sp++] = (struct Frame){ n->right, f.blacks + (_macro_map_is_black(n->right)?1:0) };
         }
@@ -805,10 +800,10 @@ static int fnode_cmp_noarg(const FNode *a, const FNode *b) {
 static int fkv_cmp_noarg(const int *key, const FNode *n) {
     return (*key > n->k) - (*key < n->k);
 }
-macro_map_insert          (fmap_insert,  FNode, fnode_cmp_noarg);           /* no with_field */
+macro_map_insert          (fmap_insert,  FNode, fnode_cmp_noarg)           /* no with_field */
 _macro_map_kv             (fmap_lower_kv, lower_bound, macro_map_default(), int, FNode, fkv_cmp_noarg)
 _macro_map_kv             (fmap_upper_kv, upper_bound, macro_map_default(), int, FNode, fkv_cmp_noarg)
-macro_map_find_kv         (fmap_find_kv, int, FNode, fkv_cmp_noarg);
+macro_map_find_kv         (fmap_find_kv, int, FNode, fkv_cmp_noarg)
 
 MACRO_TEST(map_no_field_api_first_member) {
     macro_map_t *root = NULL;
@@ -898,7 +893,7 @@ MACRO_TEST(map_copy_empty_and_singleton) {
 }
 
 
-macro_map_find_with_field(map_find_node, link, Node, node_cmp_noarg);
+macro_map_find_with_field(map_find_node, link, Node, node_cmp_noarg)
 
 MACRO_TEST(map_kv_vs_nonkv_parity) {
     macro_map_t *root=NULL;

@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
-// SPDX-FileCopyrightText: 2024-2025 Knode.ai
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef MACRO_TEST_H
 #define MACRO_TEST_H
 
@@ -80,20 +81,20 @@ static inline void macro_run_all(const char *suite, macro_test_case *t, size_t n
 }
 
 /* ---- Assertions ---- */
-#define MACRO_ASSERT_TRUE(expr) do { if (!(expr)) { \
-    fprintf(stderr,"%s[FAIL]%s %s:%d: %s\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #expr); \
+#define MACRO_ASSERT_TRUE(expr) do { if (!(expr)) {                                                           \
+    fprintf(stderr,"%s[FAIL]%s %s:%d: %s\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #expr);    \
     assert(expr);} } while(0)
 
-#define MACRO_ASSERT_FALSE(expr) do { if ((expr)) { \
-    fprintf(stderr,"%s[FAIL]%s %s:%d: expected false: %s\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #expr); \
+#define MACRO_ASSERT_FALSE(expr) do { if ((expr)) {                                                                           \
+    fprintf(stderr,"%s[FAIL]%s %s:%d: expected false: %s\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #expr);    \
     assert(!(expr));} } while(0)
 
-#define MACRO_ASSERT_EQ_INT(a,b)  do { int _A=(a),_B=(b); if (_A!=_B){ \
-    fprintf(stderr,"%s[FAIL]%s %s:%d: %s==%s  (%d!=%d)\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #a, #b, _A, _B); \
+#define MACRO_ASSERT_EQ_INT(a,b)  do { int _A=(a),_B=(b); if (_A!=_B){                                                               \
+    fprintf(stderr,"%s[FAIL]%s %s:%d: %s==%s  (%d!=%d)\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #a, #b, _A, _B);    \
     assert(_A==_B);} } while(0)
 
-#define MACRO_ASSERT_EQ_SZ(a,b)  do { size_t _A=(a),_B=(b); if (_A!=_B){ \
-    fprintf(stderr,"%s[FAIL]%s %s:%d: %s==%s  (%zu!=%zu)\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #a, #b, _A, _B); \
+#define MACRO_ASSERT_EQ_SZ(a,b)  do { size_t _A=(a),_B=(b); if (_A!=_B){                                                               \
+    fprintf(stderr,"%s[FAIL]%s %s:%d: %s==%s  (%zu!=%zu)\n", MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, #a, #b, _A, _B);    \
     assert(_A==_B);} } while(0)
 
 /* Null-safe strcmp */
@@ -102,9 +103,9 @@ static inline int macro_streq(const char *a, const char *b) {
     return strcmp(a,b)==0;
 }
 
-#define MACRO_ASSERT_STREQ(a,b) do { const char *_A=(a), *_B=(b); if (!macro_streq(_A,_B)) { \
-    fprintf(stderr,"%s[FAIL]%s %s:%d: strings differ\n  A: [%s]\n  B: [%s]\n", \
-            MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, _A?_A:"(null)", _B?_B:"(null)"); \
+#define MACRO_ASSERT_STREQ(a,b) do { const char *_A=(a), *_B=(b); if (!macro_streq(_A,_B)) {          \
+    fprintf(stderr,"%s[FAIL]%s %s:%d: strings differ\n  A: [%s]\n  B: [%s]\n",                        \
+            MACRO__CLR_RED, MACRO__CLR_RESET, __FILE__, __LINE__, _A?_A:"(null)", _B?_B:"(null)");    \
     assert(0);} } while(0)
 
 #ifdef __cplusplus
