@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText:  2019-2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
+
 #include <stdio.h>
 
 #include "the-macro-library/macro_cmp.h"
@@ -98,132 +100,120 @@
         return lo;                                                                      \
     return NULL;
 
+/* Last element <= key */
 #define __macro_bsearch_floor_code(style, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                              \
     hi--;                                                                   \
-    value_type *floor = NULL;                                               \
-    while(lo <= hi) {                                                       \
+    value_type *best = NULL;                                                \
+    while (lo <= hi) {                                                      \
         mid = lo + ((hi - lo) >> 1);                                        \
-        int n = macro_cmp(style, value_type, cmp, key, mid);                \
-        if (n < 0)  {                                                       \
+        int c = macro_cmp(style, value_type, cmp, key, mid);                \
+        if (c < 0) {            /* key < *mid */                            \
             hi = mid - 1;                                                   \
-        } else if(n > 0) {                                                  \
+        } else {                   /* key >= *mid */                        \
+            best = mid;                                                     \
             lo = mid + 1;                                                   \
-        } else {                                                            \
-            floor = mid;                                                    \
-            hi = mid - 1;                                                   \
         }                                                                   \
     }                                                                       \
-    if (floor == NULL && lo > (value_type *)base) {                         \
-        floor = lo - 1;                                                     \
-    }                                                                       \
-    return floor;
+    return best;
 
+/* Last element with value->key <= key */
 #define __macro_bsearch_kv_floor_code(style, key_type, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                           \
     hi--;                                                                                \
-    value_type *floor = NULL;                                                            \
-    while(lo <= hi) {                                                                    \
+    value_type *best = NULL;                                                             \
+    while (lo <= hi) {                                                                   \
         mid = lo + ((hi - lo) >> 1);                                                     \
-        int n = macro_cmp_kv(style, key_type, value_type, cmp, key, mid);                \
-        if (n < 0)  {                                                                    \
+        int c = macro_cmp_kv(style, key_type, value_type, cmp, key, mid);                \
+        if (c < 0) {            /* key < value(mid) */                                   \
             hi = mid - 1;                                                                \
-        } else if(n > 0) {                                                               \
+        } else {                   /* key >= value(mid) */                               \
+            best = mid;                                                                  \
             lo = mid + 1;                                                                \
-        } else {                                                                         \
-            floor = mid;                                                                 \
-            hi = mid - 1;                                                                \
         }                                                                                \
     }                                                                                    \
-    if (floor == NULL && lo > (value_type *)base) {                                      \
-        floor = lo - 1;                                                                  \
-    }                                                                                    \
-    return floor;
+    return best;
 
+/* First element >= key */
 #define __macro_bsearch_ceiling_code(style, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                \
     hi--;                                                                     \
-    value_type *ceiling = NULL;                                               \
-    while(lo <= hi) {                                                         \
+    value_type *best = NULL;                                                  \
+    while (lo <= hi) {                                                        \
         mid = lo + ((hi - lo) >> 1);                                          \
-        int n = macro_cmp(style, value_type, cmp, key, mid);                  \
-        if (n < 0)  {                                                         \
+        int c = macro_cmp(style, value_type, cmp, key, mid);                  \
+        if (c > 0) {            /* key > *mid */                              \
+            lo = mid + 1;                                                     \
+        } else {                   /* key <= *mid */                          \
+            best = mid;                                                       \
             hi = mid - 1;                                                     \
-        } else if(n > 0)                                                      \
-            lo = mid + 1;                                                     \
-        else {                                                                \
-            ceiling = mid;                                                    \
-            lo = mid + 1;                                                     \
         }                                                                     \
     }                                                                         \
-    if (ceiling == NULL && hi >= (value_type *)base) {                        \
-        ceiling = hi;                                                         \
-    }                                                                         \
-    return ceiling;
+    return best;
 
+
+/* First element with value->key >= key */
 #define __macro_bsearch_kv_ceiling_code(style, key_type, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                             \
     hi--;                                                                                  \
-    value_type *ceiling = NULL;                                                            \
-    while(lo <= hi) {                                                                      \
+    value_type *best = NULL;                                                               \
+    while (lo <= hi) {                                                                     \
         mid = lo + ((hi - lo) >> 1);                                                       \
-        int n = macro_cmp_kv(style, key_type, value_type, cmp, key, mid);                  \
-        if (n < 0)  {                                                                      \
+        int c = macro_cmp_kv(style, key_type, value_type, cmp, key, mid);                  \
+        if (c > 0) {            /* key > value(mid) */                                     \
+            lo = mid + 1;                                                                  \
+        } else {                   /* key <= value(mid) */                                 \
+            best = mid;                                                                    \
             hi = mid - 1;                                                                  \
-        } else if(n > 0)                                                                   \
-            lo = mid + 1;                                                                  \
-        else {                                                                             \
-            ceiling = mid;                                                                 \
-            lo = mid + 1;                                                                  \
         }                                                                                  \
     }                                                                                      \
-    if (ceiling == NULL && hi >= (value_type *)base) {                                     \
-        ceiling = hi;                                                                      \
-    }                                                                                      \
-    return ceiling;
+    return best;
 
 #define __macro_bsearch_lower_bound_code(style, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                    \
-    value_type *high = hi;                                                        \
-    while(lo < hi) {                                                              \
+    value_type *end = hi;                                                         \
+    while (lo < hi) {                                                             \
         mid = lo + ((hi - lo) >> 1);                                              \
         if (macro_greater(style, value_type, cmp, key, mid))                      \
             lo = mid + 1;                                                         \
         else                                                                      \
             hi = mid;                                                             \
     }                                                                             \
-    return lo < high ? lo : NULL;
+    return (lo < end) ? lo : NULL;  /* NULL if past-the-end */
 
 #define __macro_bsearch_kv_lower_bound_code(style, key_type, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                                 \
-    value_type *high = hi;                                                                     \
-    while(lo < hi) {                                                                           \
+    value_type *end = hi;                                                                      \
+    while (lo < hi) {                                                                          \
         mid = lo + ((hi - lo) >> 1);                                                           \
         if (macro_greater_kv(style, key_type, value_type, cmp, key, mid))                      \
             lo = mid + 1;                                                                      \
         else                                                                                   \
             hi = mid;                                                                          \
     }                                                                                          \
-    return lo < high ? lo : NULL;
+    return (lo < end) ? lo : NULL;
 
 #define __macro_bsearch_upper_bound_code(style, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                    \
-    while(lo < hi) {                                                              \
+    value_type *end = hi;                                                         \
+    while (lo < hi) {                                                             \
         mid = lo + ((hi - lo) >> 1);                                              \
         if (macro_less(style, value_type, cmp, key, mid))                         \
             hi = mid;                                                             \
         else                                                                      \
             lo = mid + 1;                                                         \
     }                                                                             \
-    return lo;
+    return (lo < end) ? lo : NULL;  /* NULL if past-the-end */
+
 
 #define __macro_bsearch_kv_upper_bound_code(style, key_type, value_type, cmp, key, base, n)    \
     __macro_bsearch_vars(value_type, base, n);                                                 \
-    while(lo < hi) {                                                                           \
+    value_type *end = hi;                                                                      \
+    while (lo < hi) {                                                                          \
         mid = lo + ((hi - lo) >> 1);                                                           \
         if (macro_less_kv(style, key_type, value_type, cmp, key, mid))                         \
             hi = mid;                                                                          \
         else                                                                                   \
             lo = mid + 1;                                                                      \
     }                                                                                          \
-    return lo;
+    return (lo < end) ? lo : NULL;
